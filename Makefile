@@ -28,7 +28,7 @@ install: env-check
 
 # Generic run command: make run FILE=flows/sample_pipeline.py
 run:
-	PYTHONPATH=. poetry run python $(FILE)
+	poetry run python $(FILE)
 
 docker-build:
 	docker-compose build
@@ -47,15 +47,15 @@ docker-status:
 
 # Deploy all flows
 prefect-deploy: env-check
-	PYTHONPATH=. poetry run python prefect_utils.py deploy-all
+	poetry run python prefect_utils.py deploy-all
 
 # List all flows and deployments
 prefect-list:
-	PYTHONPATH=. poetry run python prefect_utils.py list
+	poetry run python prefect_utils.py list
 
 # Run a specific flow (usage: make prefect-run FLOW=sample_etl_pipeline)
 prefect-run:
-	PYTHONPATH=. poetry run python prefect_utils.py run $(FLOW)
+	poetry run python prefect_utils.py run $(FLOW)
 
 # Open Prefect UI
 prefect-ui:
@@ -109,13 +109,15 @@ init: env-check install
 	@mkdir -p $(DATA_RAW_PATH)/kaggle
 	@mkdir -p $(DATA_PROCESSED_PATH)
 	@mkdir -p $(LOG_PATH)
+	@echo "Setting up Python path..."
+	@poetry run python scripts/setup_python_path.py
 	@echo "Project initialized. Please place MulDiGraph.pkl in $(DATA_RAW_PATH)/kaggle/"
 
 # Run the complete pipeline (without Prefect server)
 pipeline: env-check
 	@echo "Running complete pipeline..."
 	@echo "Note: Running in local mode without Prefect server"
-	PREFECT_API_URL="" PYTHONPATH=. poetry run python flows/kaggle_data_prep.py
+	PREFECT_API_URL="" poetry run python flows/kaggle_data_prep.py
 	cd dbt && poetry run dbt build --project-dir . --profiles-dir . --target $(DBT_TARGET)
 	@echo "Pipeline completed successfully!"
 
@@ -123,7 +125,7 @@ pipeline: env-check
 pipeline-prefect: env-check
 	@echo "Running pipeline with Prefect server..."
 	@echo "Make sure Prefect server is running (make prefect-server)"
-	PYTHONPATH=. poetry run python flows/kaggle_data_prep.py
+	poetry run python flows/kaggle_data_prep.py
 	cd dbt && poetry run dbt build --project-dir . --profiles-dir . --target $(DBT_TARGET)
 	@echo "Pipeline completed successfully!"
 

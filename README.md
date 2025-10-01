@@ -80,20 +80,31 @@ git clone <repository-url>
 cd itmx-kaggle
 ```
 
-2. **Set up environment variables**
+2. **Initialize the project** (recommended - handles everything automatically)
 ```bash
+make init
+```
+This command will:
+- Create .env from .env.example
+- Install all dependencies
+- Set up Python path configuration (no PYTHONPATH needed)
+- Create necessary directories
+
+Alternatively, you can set up manually:
+
+```bash
+# Create environment file
 cp .env.example .env
 # Edit .env with your configuration
-```
 
-3. **Install dependencies**
-```bash
-make install
-# or
+# Install dependencies
 poetry install
+
+# Set up Python path (enables imports from project root)
+poetry run python scripts/setup_python_path.py
 ```
 
-4. **Place your data**
+3. **Place your data**
    - Download the Kaggle dataset (MulDiGraph.pkl)
    - Place it in `data/raw/kaggle/MulDiGraph.pkl`
 

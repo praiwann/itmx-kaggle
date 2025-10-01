@@ -7,11 +7,6 @@ from datetime import datetime
 from prefect import flow, task
 from prefect.task_runners import SequentialTaskRunner
 from pathlib import Path
-import sys
-import os
-
-# Add parent directory to path to import config
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import DUCKDB_PATH, KAGGLE_DATA_PATH
 
 
