@@ -2,6 +2,14 @@
 
 A modern data pipeline for analyzing Ethereum transaction networks to detect phishing accounts, built with Prefect, dbt, DuckDB, and PySpark.
 
+## 📌 Important Notes
+
+**Project Context:**
+- This project was created for researching efficient ETL pipeline development on local infrastructure (cloud solutions are not the primary focus)
+- The data model design is based on specific requirements from ITMX, a developer and service provider of Thailand's electronic payment infrastructure
+- **⚡ The answer to ITMX's questions can be found in the `gold_transaction_summary` model**
+- The project can be further enhanced to consolidate all pipeline runs under Prefect control flow (currently dbt runs independently, but the infrastructure is already in place)
+
 ## Overview
 
 This project implements an end-to-end data pipeline for processing and analyzing Ethereum transaction data from a Kaggle competition dataset. It uses a medallion architecture (Bronze -> Silver -> Gold) to transform raw network graph data into analytical insights about phishing patterns in Ethereum transactions.
@@ -61,7 +69,7 @@ This project implements an end-to-end data pipeline for processing and analyzing
   - `silver_transaction_enriched`: Transactions with account metadata
 
 - **Gold**: Business-ready analytical models
-  - `gold_transaction_summary`: Aggregated transaction metrics
+  - `gold_transaction_summary`: Aggregated transaction metrics (contains ITMX business answers)
   - `gold_hourly_network_metrics`: Time-series network analysis
 
 ## Quick Start
