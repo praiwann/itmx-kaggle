@@ -19,7 +19,7 @@ services:
   spark:
     build:
       context: .
-      dockerfile: docker/Dockerfile.spark
+      dockerfile: .docker/Dockerfile.spark
     image: itmx-kaggle/spark:latest
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     environment:
@@ -41,7 +41,7 @@ services:
   prefect:
     build:
       context: .
-      dockerfile: docker/Dockerfile.prefect
+      dockerfile: .docker/Dockerfile.prefect
     image: itmx-kaggle/prefect:latest
     command: prefect server start --host ${PREFECT_SERVER_HOST:-0.0.0.0}
     ports:

@@ -186,7 +186,7 @@ itmx-kaggle/
 │   ├── raw/              # Source data
 │   │   └── kaggle/       # Kaggle dataset
 │   └── processed/        # Output data
-├── docker/               # Docker configurations
+├── .docker/              # Docker configurations
 ├── spark/                # PySpark scripts
 ├── prefect_utils.py      # Prefect management utilities
 ├── docker-compose.yml    # Container orchestration
