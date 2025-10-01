@@ -382,7 +382,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Dataset source: Kaggle Ethereum Fraud Detection Competition
+- Dataset source: Kaggle Ethereum Phishing Transaction Network
 - Built with: Prefect, dbt, DuckDB, PySpark
 - Medallion architecture inspired by Databricks best practices
 
