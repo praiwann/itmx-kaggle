@@ -85,6 +85,8 @@ clean:
 	rm -rf $(DATA_PROCESSED_PATH)/*
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	rm -rf $(LOG_PATH)/*
+	# Clean up any accidentally created directories in subdirs
+	rm -rf flows/data flows/logs 2>/dev/null || true
 
 test:
 	poetry run pytest tests/ -v
