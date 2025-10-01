@@ -5,20 +5,26 @@ USER root
 # Upgrade pip first
 RUN pip install --upgrade pip
 
-# Install Python packages with compatible versions for Python 3.8
+# Install Python packages
 RUN pip install --no-cache-dir \
     duckdb==0.10.0 \
     pandas==2.0.3 \
     pyarrow==14.0.2 \
-    prefect==2.14.0
+    prefect==2.20.0 \
+    python-dotenv==1.0.0 \
+    networkx==3.1
 
 WORKDIR /opt/spark/work-dir
 
-# Copy application files
+# Copy configuration and application files
+COPY config.py ./
 COPY spark/ ./spark/
 
 # Set proper permissions
 RUN chmod -R 755 ./spark/
+
+# Set Python path
+ENV PYTHONPATH=/opt/spark/work-dir:$PYTHONPATH
 
 USER 185
 

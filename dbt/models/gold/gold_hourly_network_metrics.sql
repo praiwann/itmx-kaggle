@@ -1,9 +1,8 @@
 {{
     config(
         materialized='incremental',
-        incremental_strategy= 'merge',
-        unique_key=['txn_date', 'hour_ts'],
-        partition_by=['txn_date']
+        incremental_strategy='delete+insert',
+        unique_key=['txn_date', 'hour_ts']
     )
 }}
 

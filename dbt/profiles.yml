@@ -1,7 +1,17 @@
 itmx_kaggle:
-  target: local
+  target: "{{ env_var('DBT_TARGET', 'dev') }}"
   outputs:
-    local: &local
+    dev:
       type: duckdb
-      path: '../data/itmx_kaggle.duckdb'
-      threads: 8
+      path: "../{{ env_var('DUCKDB_PATH', 'data/itmx_kaggle.duckdb') }}"
+      threads: "{{ env_var('DBT_THREADS', '4') | int }}"
+
+    prod:
+      type: duckdb
+      path: "../{{ env_var('DUCKDB_PATH', 'data/itmx_kaggle.duckdb') }}"
+      threads: "{{ env_var('DBT_THREADS', '8') | int }}"
+
+    docker:
+      type: duckdb
+      path: "/data/itmx_kaggle.duckdb"
+      threads: "{{ env_var('DBT_THREADS', '4') | int }}"

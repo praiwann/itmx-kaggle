@@ -13,7 +13,13 @@ import asyncio
 from pathlib import Path
 import importlib.util
 
-os.environ["PREFECT_API_URL"] = "http://localhost:4200/api"
+# Try to import config, but use defaults if not available
+try:
+    from config import PREFECT_API_URL
+except ImportError:
+    PREFECT_API_URL = os.environ.get("PREFECT_API_URL", "http://localhost:4200/api")
+
+os.environ["PREFECT_API_URL"] = PREFECT_API_URL
 
 from prefect import get_client, flow
 from prefect.deployments import Deployment

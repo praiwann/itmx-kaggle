@@ -7,44 +7,63 @@ services:
     command: python -m http.server 8080
     working_dir: /data
     volumes:
-      - ./data:/data
+      - ${DOCKER_DATA_VOLUME:-./data:/data}
     ports:
       - "8080:8080"
     networks:
-      - pipeline-network
+      - ${DOCKER_NETWORK:-pipeline-network}
+    environment:
+      - DUCKDB_PATH=${DUCKDB_PATH:-data/itmx_kaggle.duckdb}
 
-  # Spark standalone (no custom build needed)
+  # Spark with custom build (includes dependencies)
   spark:
-    image: apache/spark:3.5.0-python3
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.spark
+    image: itmx-kaggle/spark:latest
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     environment:
       - SPARK_MASTER_HOST=0.0.0.0
       - SPARK_MASTER_PORT=7077
       - SPARK_NO_DAEMONIZE=true
+      - SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY:-2g}
+      - SPARK_EXECUTOR_CORES=${SPARK_EXECUTOR_CORES:-2}
     ports:
       - "8081:8080"  # Spark UI
       - "7077:7077"  # Spark master port
     volumes:
       - ./spark:/opt/spark/work-dir/spark
-      - ./data:/data
+      - ${DOCKER_DATA_VOLUME:-./data:/data}
     networks:
-      - pipeline-network
+      - ${DOCKER_NETWORK:-pipeline-network}
 
-  # Prefect server
+  # Prefect server with custom build (includes all dependencies)
   prefect:
-    image: prefecthq/prefect:2.20-python3.11
-    command: prefect server start --host 0.0.0.0
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prefect
+    image: itmx-kaggle/prefect:latest
+    command: prefect server start --host ${PREFECT_SERVER_HOST:-0.0.0.0}
     ports:
-      - "4200:4200"
+      - "${PREFECT_SERVER_PORT:-4200}:4200"
     volumes:
       - ./flows:/app/flows
-      - ./data:/data
+      - ./config.py:/app/config.py
+      - ./dbt:/app/dbt
+      - ${DOCKER_DATA_VOLUME:-./data:/data}
+      - ./.env:/app/.env
     environment:
-      - PREFECT_API_URL=http://localhost:4200/api
-      - PREFECT_SERVER_API_HOST=0.0.0.0
+      - PREFECT_API_URL=${PREFECT_API_URL:-http://localhost:4200/api}
+      - PREFECT_SERVER_API_HOST=${PREFECT_SERVER_HOST:-0.0.0.0}
+      - DUCKDB_PATH=${DUCKDB_PATH:-data/itmx_kaggle.duckdb}
+      - KAGGLE_DATA_PATH=${KAGGLE_DATA_PATH:-data/raw/kaggle}
+      - DATA_RAW_PATH=${DATA_RAW_PATH:-data/raw}
+      - DATA_PROCESSED_PATH=${DATA_PROCESSED_PATH:-data/processed}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
-      - pipeline-network
+      - ${DOCKER_NETWORK:-pipeline-network}
 
 networks:
   pipeline-network:
     driver: bridge
+    name: ${DOCKER_NETWORK:-pipeline-network}

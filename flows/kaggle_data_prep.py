@@ -6,12 +6,13 @@ import networkx as nx
 from datetime import datetime
 from prefect import flow, task
 from prefect.task_runners import SequentialTaskRunner
-import os
 from pathlib import Path
+import sys
+import os
 
-# Get paths from environment or use defaults
-DUCKDB_PATH = os.environ.get("DUCKDB_PATH", "data/itmx_kaggle.duckdb")
-KAGGLE_DATA_PATH = os.environ.get("KAGGLE_DATA_PATH", "data/raw/kaggle")
+# Add parent directory to path to import config
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import DUCKDB_PATH, KAGGLE_DATA_PATH
 
 
 def load_pickle(fname):
@@ -95,7 +96,7 @@ def save_transaction_into_wh(G: nx.classes.MultiDiGraph) -> None:
 
 
 @flow(name="kaggle_data_prep", task_runner=SequentialTaskRunner())
-def kaggle_etl_pipeline():
+def etl_pipeline():
     print("Starting ETL Pipeline...")
 
     create_staging_schema()
@@ -112,4 +113,4 @@ def kaggle_etl_pipeline():
 
 
 if __name__ == "__main__":
-    kaggle_etl_pipeline()
+    etl_pipeline()
