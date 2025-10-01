@@ -1,0 +1,32 @@
+name: 'itmx_kaggle'
+version: '1.0.0'
+config-version: 2
+
+profile: 'itmx_kaggle'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  itmx_kaggle:
+    bronze:
+      tags: bronze
+      +schema: bronze
+    silver:
+      tags: silver
+      +schema: silver
+      silver_transaction_enriched:
+        enabled: true
+    gold:
+      tags: gold
+      +schema: gold
+      gold_hourly_network_metrics:
+        enabled: true

@@ -1,0 +1,7 @@
+version: 1
+sources:
+  - name: staging_data
+    schema: staging
+    tables:
+      - name: mst_eth_account
+      - name: eth_transaction

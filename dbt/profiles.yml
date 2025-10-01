@@ -1,0 +1,7 @@
+itmx_kaggle:
+  target: local
+  outputs:
+    local: &local
+      type: duckdb
+      path: '../data/itmx_kaggle.duckdb'
+      threads: 8

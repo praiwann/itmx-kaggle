@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: gold_transaction_summary
+    description: "Table containing standardized transaction"
+    columns:
+      - name: from_id
+        description: "The account ID of which transaction transfer from"
+        tests:
+          - not_null
+      - name: to_id
+        description: "The account ID of which transaction transfer to"
+        tests:
+          - not_null
+      - name: txn_amount
+        description: "Amount of the transaction"
+        tests:
+          - not_null
+      - name: txn_ts
+        description: "Timestamp of transaction"
+        tests:
+          - not_null
+      - name: txn_date
+        description: "Date of transaction"
+        tests:
+          - not_null
+      - name: sender_txn_last_1hr
+        description: "Total transaction count from sender last 1 hour"
+      - name: sender_prev_amount
+        description: "Amount from previous transaction of sender"
+      - name: receiver_txn_last_1hr
+        description: "Total transaction count from receiver last 1 hour"
+      - name: receiver_prev_amount
+        description: "Amount from previous transaction of receiver"
+  - name: gold_hourly_network_metrics
+    description: "Table containing transaction hourly metrics"
+    columns:
+      - name: txn_date
+        description: "Date of current metrics"
+        tests:
+          - not_null
+      - name: hour_ts
+        description: "Hour of current metrics"
+        tests:
+          - not_null
+      - name: txn_count
+        description: "Total transaction count"
+      - name: unique_senders
+        description: "Total unique senders count"
+      - name: unique_receivers
+        description: "Total unique receivers count"
+      - name: active_accounts
+        description: "Total active account count"
+      - name: total_volume
+        description: "Total volume"
+      - name: avg_txn_amount
+        description: "Average transaction amount"
+      - name: stddev_txn_amount
+        description: "Standard deviation of transaction amount"
+      - name: median_txn_amount
+        description: "Median of transaction amount"
+      - name: p95_txn_amount
+        description: "95 Percentile of transaction amount"
+      - name: max_txn_amount
+        description: "Max transaction amount"
+      - name: phishing_sender_txn_count
+        description: "Count of phishing senders"
+      - name: phishing_receiver_txn_count
+        description: "Count of phishing receivers"
+      - name: phishing_sender_volume
+        description: "Total volume of phishing senders"
+      - name: phishing_receiver_volume
+        description: "Total volume of phishing receivers"
+        
+        
+

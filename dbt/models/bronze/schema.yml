@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: bronze_raw_transactions
+    description: "Table containing raw transactions"
+    columns:
+      - name: from_account
+        description: "The account ID of which transaction transfer from"
+        tests:
+          - not_null
+      - name: to_account
+        description: "The account ID of which transaction transfer to"
+        tests:
+          - not_null
+      - name: amount
+        description: "Amount of the transaction"
+        tests:
+          - not_null
+      - name: transaction_ts
+        description: "Timestamp of transaction"
+        tests:
+          - not_null
+      - name: data_dt
+        description: "Date of data loaded"
+        tests:
+          - not_null
+  - name: bronze_raw_eth_account
+    description: "Table containing account master"
+    columns:
+      - name: account_id
+        description: "Ethereum account ID"
+        tests:
+          - not_null
+      - name: is_phishing
+        description: "Label flag if account is phishing"
+        tests:
+          - not_null
+      - name: data_dt
+        description: "Date of data loaded"
+        tests:
+          - not_null

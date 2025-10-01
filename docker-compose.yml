@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Simple DuckDB file server
+  duckdb:
+    image: python:3.11-slim
+    command: python -m http.server 8080
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+    networks:
+      - pipeline-network
+
+  # Spark standalone (no custom build needed)
+  spark:
+    image: apache/spark:3.5.0-python3
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MASTER_HOST=0.0.0.0
+      - SPARK_MASTER_PORT=7077
+      - SPARK_NO_DAEMONIZE=true
+    ports:
+      - "8081:8080"  # Spark UI
+      - "7077:7077"  # Spark master port
+    volumes:
+      - ./spark:/opt/spark/work-dir/spark
+      - ./data:/data
+    networks:
+      - pipeline-network
+
+  # Prefect server
+  prefect:
+    image: prefecthq/prefect:2.20-python3.11
+    command: prefect server start --host 0.0.0.0
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./flows:/app/flows
+      - ./data:/data
+    environment:
+      - PREFECT_API_URL=http://localhost:4200/api
+      - PREFECT_SERVER_API_HOST=0.0.0.0
+    networks:
+      - pipeline-network
+
+networks:
+  pipeline-network:
+    driver: bridge

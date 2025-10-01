@@ -1,0 +1,26 @@
+FROM apache/spark:3.5.0-python3
+
+USER root
+
+# Upgrade pip first
+RUN pip install --upgrade pip
+
+# Install Python packages with compatible versions for Python 3.8
+RUN pip install --no-cache-dir \
+    duckdb==0.10.0 \
+    pandas==2.0.3 \
+    pyarrow==14.0.2 \
+    prefect==2.14.0
+
+WORKDIR /opt/spark/work-dir
+
+# Copy application files
+COPY spark/ ./spark/
+
+# Set proper permissions
+RUN chmod -R 755 ./spark/
+
+USER 185
+
+# Default entrypoint is already set by the base image
+CMD ["/opt/spark/bin/spark-submit", "--version"]

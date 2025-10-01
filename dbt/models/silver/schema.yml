@@ -1,0 +1,84 @@
+version: 2
+
+models:
+  - name: silver_transactions
+    description: "Table containing standardized transactions"
+    columns:
+      - name: from_account
+        description: "The account ID of which transaction transfer from"
+        tests:
+          - not_null
+      - name: to_account
+        description: "The account ID of which transaction transfer to"
+        tests:
+          - not_null
+      - name: amount
+        description: "Amount of the transaction"
+        tests:
+          - not_null
+      - name: transaction_ts
+        description: "Timestamp of transaction"
+        tests:
+          - not_null
+      - name: transaction_dt
+        description: "Date of transaction"
+        tests:
+          - not_null
+      - name: data_dt
+        description: "Date of data loaded"
+        tests:
+          - not_null
+  - name: silver_account_masters
+    description: "Table containing account master"
+    columns:
+      - name: account_id
+        description: "Ethereum account ID"
+        tests:
+          - not_null
+      - name: is_phishing
+        description: "Label flag if account is phishing"
+        tests:
+          - not_null
+      - name: first_seen_dt
+        description: "First seen date of which account do transaction"
+      - name: last_seen_dt
+        description: "Last seen date of which account do transaction"
+      - name: data_dt
+        description: "Date of data loaded"
+        tests:
+          - not_null
+  - name: silver_transaction_enriched
+    description: "Table containing enriched transactions"
+    columns:
+      - name: from_account
+        description: "The account ID of which transaction transfer from"
+        tests:
+          - not_null
+      - name: to_account
+        description: "The account ID of which transaction transfer to"
+        tests:
+          - not_null
+      - name: amount
+        description: "Amount of the transaction"
+        tests:
+          - not_null
+      - name: transaction_ts
+        description: "Timestamp of transaction"
+        tests:
+          - not_null
+      - name: transaction_dt
+        description: "Date of transaction"
+        tests:
+          - not_null
+      - name: sender_is_phishing
+        description: "Flag sender is phishing"
+      - name: sender_first_seen
+        description: "First seen date of which sender do transaction"
+      - name: receiver_is_phishing
+        description: "Flag receiver is phishing"
+      - name: receiver_first_seen
+        description: "First seen date of which receiver do transaction"
+      - name: data_dt
+        description: "Date of data loaded"
+        tests:
+          - not_null
