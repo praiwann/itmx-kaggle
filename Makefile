@@ -45,39 +45,29 @@ docker-logs:
 docker-status:
 	docker-compose ps
 
-# Deploy all flows
-prefect-deploy: env-check
-	poetry run python prefect_utils.py deploy-all
+# Deploy flows in Docker
+prefect-deploy:
+	docker-compose exec prefect python prefect_utils.py deploy-all
 
-# List all flows and deployments
+# List flows in Docker
 prefect-list:
-	poetry run python prefect_utils.py list
-
-# Run a specific flow (usage: make prefect-run FLOW=sample_etl_pipeline)
-prefect-run:
-	poetry run python prefect_utils.py run $(FLOW)
+	docker-compose exec prefect python prefect_utils.py list
 
 # Open Prefect UI
 prefect-ui:
-	@echo "Opening Prefect UI at $(PREFECT_API_URL)"
-	@open $(PREFECT_API_URL) || xdg-open $(PREFECT_API_URL) || echo "Please open $(PREFECT_API_URL) in your browser"
+	@echo "Opening Prefect UI at http://localhost:4200"
+	@open http://localhost:4200 || xdg-open http://localhost:4200 || echo "Please open http://localhost:4200 in your browser"
 
-# Start Prefect server locally
-prefect-server:
-	PREFECT_API_URL=$(PREFECT_API_URL) prefect server start
-
+# dbt operations in Docker
 dbt-run:
-	cd dbt && poetry run dbt run --project-dir . --profiles-dir . --target $(DBT_TARGET)
-
-dbt-build:
-	cd dbt && poetry run dbt build --project-dir . --profiles-dir . --target $(DBT_TARGET)
+	docker-compose exec prefect dbt run --project-dir dbt --profiles-dir dbt --target docker
 
 dbt-test:
-	cd dbt && poetry run dbt test --project-dir . --profiles-dir . --target $(DBT_TARGET)
+	docker-compose exec prefect dbt test --project-dir dbt --profiles-dir dbt --target docker
 
 dbt-docs:
-	cd dbt && poetry run dbt docs generate --project-dir . --profiles-dir . --target $(DBT_TARGET)
-	cd dbt && poetry run dbt docs serve --project-dir . --profiles-dir .
+	docker-compose exec prefect dbt docs generate --project-dir dbt --profiles-dir dbt --target docker
+	docker-compose exec prefect dbt docs serve --project-dir dbt --profiles-dir dbt
 
 clean:
 	rm -rf dbt/target dbt/dbt_packages dbt/logs
@@ -113,56 +103,52 @@ init: env-check install
 	@poetry run python scripts/setup_python_path.py
 	@echo "Project initialized. Please place MulDiGraph.pkl in $(DATA_RAW_PATH)/kaggle/"
 
-# Run the complete pipeline (without Prefect server)
-pipeline: env-check
-	@echo "Running complete pipeline..."
-	@echo "Note: Running in local mode without Prefect server"
-	PREFECT_API_URL="" poetry run python flows/kaggle_data_prep.py
-	cd dbt && poetry run dbt build --project-dir . --profiles-dir . --target $(DBT_TARGET)
-	@echo "Pipeline completed successfully!"
+# Run pipeline in Docker (usage: make pipeline or make pipeline FLOW=kaggle_etl_pipeline)
+pipeline:
+	@echo "Running pipeline in Docker..."
+	@if [ -z "$(FLOW)" ]; then \
+		docker-compose exec prefect python prefect_utils.py run kaggle_etl_pipeline; \
+	else \
+		docker-compose exec prefect python prefect_utils.py run $(FLOW); \
+	fi
 
-# Run pipeline with Prefect server
-pipeline-prefect: env-check
-	@echo "Running pipeline with Prefect server..."
-	@echo "Make sure Prefect server is running (make prefect-server)"
-	poetry run python flows/kaggle_data_prep.py
-	cd dbt && poetry run dbt build --project-dir . --profiles-dir . --target $(DBT_TARGET)
-	@echo "Pipeline completed successfully!"
+# Run dbt in Docker
+dbt:
+	docker-compose exec prefect dbt build --project-dir dbt --profiles-dir dbt --target docker
 
 help:
 	@echo "ITMX Kaggle Pipeline - Available Commands"
 	@echo "========================================="
-	@echo "Setup:"
-	@echo "  make init          - Initialize project (create .env, install deps, create dirs)"
-	@echo "  make install       - Install dependencies"
-	@echo "  make env-check     - Check/create .env file"
 	@echo ""
-	@echo "Pipeline:"
-	@echo "  make pipeline        - Run complete ETL pipeline (local mode)"
-	@echo "  make pipeline-prefect - Run pipeline with Prefect server"
-	@echo "  make run FILE=x      - Run a specific Python file"
+	@echo "1. Setup (run once):"
+	@echo "   make init          - Initialize project (create .env, install deps, create dirs)"
+	@echo "   make docker-build  - Build Docker images"
 	@echo ""
-	@echo "Prefect:"
-	@echo "  make prefect-server  - Start Prefect server"
-	@echo "  make prefect-deploy  - Deploy all flows"
-	@echo "  make prefect-list    - List flows and deployments"
-	@echo "  make prefect-run FLOW=x - Run specific flow"
-	@echo "  make prefect-ui      - Open Prefect UI"
+	@echo "2. Start Docker:"
+	@echo "   make docker-up     - Start all services (Prefect, Spark, DuckDB)"
 	@echo ""
-	@echo "dbt:"
-	@echo "  make dbt-run       - Run dbt models"
-	@echo "  make dbt-build     - Build and test models"
-	@echo "  make dbt-test      - Run dbt tests"
-	@echo "  make dbt-docs      - Generate and serve dbt docs"
+	@echo "3. Run Pipeline (in Docker):"
+	@echo "   make pipeline      - Run default ETL pipeline"
+	@echo "   make pipeline FLOW=<name> - Run specific flow"
+	@echo "   make dbt           - Run dbt transformations"
 	@echo ""
-	@echo "Docker:"
-	@echo "  make docker-up     - Start all services"
-	@echo "  make docker-down   - Stop all services"
-	@echo "  make docker-logs   - View container logs"
-	@echo "  make docker-status - Check service status"
+	@echo "Additional Commands:"
+	@echo "  Docker:"
+	@echo "   make docker-down   - Stop all services"
+	@echo "   make docker-logs   - View container logs"
+	@echo "   make docker-status - Check service status"
 	@echo ""
-	@echo "Utils:"
-	@echo "  make clean         - Clean generated files"
-	@echo "  make test          - Run tests"
-	@echo "  make show-env      - Display environment config"
-	@echo "  make help          - Show this help message"
+	@echo "  Prefect:"
+	@echo "   make prefect-deploy - Deploy flows to Prefect"
+	@echo "   make prefect-list   - List deployed flows"
+	@echo "   make prefect-ui     - Open Prefect UI (http://localhost:4200)"
+	@echo ""
+	@echo "  dbt:"
+	@echo "   make dbt-run       - Run dbt models only"
+	@echo "   make dbt-test      - Run dbt tests only"
+	@echo "   make dbt-docs      - Generate and serve dbt docs"
+	@echo ""
+	@echo "  Utilities:"
+	@echo "   make clean         - Clean generated files"
+	@echo "   make show-env      - Display environment config"
+	@echo "   make help          - Show this help message"

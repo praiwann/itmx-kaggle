@@ -76,11 +76,11 @@ This project implements an end-to-end data pipeline for processing and analyzing
 
 ### Prerequisites
 
-- Python 3.11+
-- Poetry (for dependency management)
-- Docker & Docker Compose (optional, for containerized deployment)
+- Docker & Docker Compose
+- Python 3.11+ with Poetry (for local development only)
+- Kaggle dataset: MulDiGraph.pkl
 
-### Installation
+### Setup Instructions
 
 1. **Clone the repository**
 ```bash
@@ -88,94 +88,82 @@ git clone <repository-url>
 cd itmx-kaggle
 ```
 
-2. **Initialize the project** (recommended - handles everything automatically)
+2. **Initialize the project**
 ```bash
 make init
 ```
-This command will:
+This will:
 - Create .env from .env.example
-- Install all dependencies
-- Set up Python path configuration (no PYTHONPATH needed)
+- Install local dependencies (for development)
 - Create necessary directories
-
-Alternatively, you can set up manually:
-
-```bash
-# Create environment file
-cp .env.example .env
-# Edit .env with your configuration
-
-# Install dependencies
-poetry install
-
-# Set up Python path (enables imports from project root)
-poetry run python scripts/setup_python_path.py
-```
+- Set up Python path configuration
 
 3. **Place your data**
    - Download the Kaggle dataset (MulDiGraph.pkl)
    - Place it in `data/raw/kaggle/MulDiGraph.pkl`
 
-### Running the Pipeline
-
-#### Local Execution
-
-1. **Start Prefect server** (in a separate terminal)
-```bash
-prefect server start
-```
-
-2. **Deploy flows to Prefect**
-```bash
-make prefect-deploy
-```
-
-3. **Run the ETL pipeline**
-```bash
-make prefect-run FLOW=kaggle_etl_pipeline
-# or directly
-poetry run python flows/kaggle_data_prep.py
-```
-
-4. **Run dbt transformations**
-```bash
-make dbt-build
-```
-
-5. **View results in Prefect UI**
-```bash
-make prefect-ui
-# Opens http://localhost:4200
-```
-
-#### Docker Execution
-
-1. **Build Docker images** (required first time or after Dockerfile changes)
+4. **Build Docker images**
 ```bash
 make docker-build
 ```
 
-2. **Start all services**
+### Running the Pipeline
+
+All pipeline operations run in Docker for consistency and ease of use.
+
+#### Step 1: Start Docker Services
 ```bash
 make docker-up
 ```
+This starts:
+- **Prefect server** (orchestration) - UI at http://localhost:4200
+- **Spark cluster** (processing) - UI at http://localhost:8081
+- **DuckDB server** (database)
 
-3. **Check service status**
+#### Step 2: Deploy Flows (first time only)
 ```bash
+make prefect-deploy
+```
+
+#### Step 3: Run the Pipeline
+
+**Option A: Run ETL Pipeline**
+```bash
+# Run default pipeline
+make pipeline
+
+# Or run specific flow
+make pipeline FLOW=kaggle_etl_pipeline
+```
+
+**Option B: Run dbt Transformations**
+```bash
+# Run all dbt models and tests
+make dbt
+
+# Run only dbt models (without tests)
+make dbt-run
+
+# Run only dbt tests
+make dbt-test
+```
+
+#### Step 4: Monitor Progress
+```bash
+# Open Prefect UI to monitor flows
+make prefect-ui
+
+# View Docker logs
+make docker-logs
+
+# Check service status
 make docker-status
 ```
 
-4. **View logs**
-```bash
-make docker-logs
-```
-
-5. **Stop services**
+#### Step 5: Stop Services (when done)
 ```bash
 make docker-down
 ```
-
-**Note**: The Docker setup includes custom images with all dependencies pre-installed for both Prefect and Spark services.
 
 ## Project Structure
 
@@ -205,46 +193,51 @@ itmx-kaggle/
 
 ## Available Commands
 
-### Makefile Commands
+### Quick Command Reference
 
 ```bash
-# Installation & Setup
-make install              # Install dependencies
+# Setup (run once)
+make init               # Initialize project
+make docker-build       # Build Docker images
 
-# Prefect Operations
-make prefect-deploy      # Deploy all flows
-make prefect-list        # List flows and deployments
-make prefect-run FLOW=x  # Run specific flow
-make prefect-ui          # Open Prefect UI
+# Docker Services
+make docker-up          # Start all services
+make docker-down        # Stop all services
+make docker-status      # Check service status
+make docker-logs        # View container logs
 
-# dbt Operations
-make dbt-run            # Run dbt models
-make dbt-build          # Build and test models
-make dbt-test           # Run dbt tests
+# Pipeline Execution (in Docker)
+make pipeline           # Run default ETL pipeline
+make pipeline FLOW=x    # Run specific flow
+make dbt                # Run dbt transformations
 
-# Docker Operations
-make docker-build       # Build containers
-make docker-up          # Start services
-make docker-down        # Stop services
-make docker-logs        # View logs
-make docker-status      # Check status
+# Additional Operations
+make prefect-deploy     # Deploy flows to Prefect
+make prefect-list       # List deployed flows
+make prefect-ui         # Open Prefect UI
+make dbt-run            # Run dbt models only
+make dbt-test           # Run dbt tests only
+make dbt-docs           # Generate and serve dbt docs
 
-# Maintenance
+# Utilities
 make clean              # Clean generated files
-make test               # Run tests
+make show-env           # Display environment config
+make help               # Show all available commands
 ```
 
-### Prefect Utilities
+### Complete Workflow Example
 
 ```bash
-# Deploy all flows
-python prefect_utils.py deploy-all
+# One-time setup
+make init               # Initialize project
+make docker-build       # Build images
 
-# List flows and deployments
-python prefect_utils.py list
-
-# Run a specific flow
-python prefect_utils.py run <flow_name>
+# Daily workflow
+make docker-up          # Start services
+make prefect-deploy     # Deploy flows (if needed)
+make pipeline           # Run ETL pipeline
+make dbt                # Run transformations
+make docker-down        # Stop services when done
 ```
 
 ## Configuration
@@ -361,11 +354,22 @@ make test
 
 ## Docker Services
 
-The project includes three main services:
+The project runs three containerized services:
 
-1. **DuckDB**: File server for database access (port 8080)
-2. **Spark**: Apache Spark cluster (UI on port 8081, master on 7077)
-3. **Prefect**: Workflow orchestration (UI on port 4200)
+1. **Prefect**: Workflow orchestration and pipeline execution
+   - UI: http://localhost:4200
+   - Includes dbt and all Python dependencies
+   - Manages flow deployments and execution
+
+2. **Spark**: Distributed processing for large-scale data
+   - UI: http://localhost:8081
+   - Master: spark://localhost:7077
+   - Used for heavy data processing tasks
+
+3. **DuckDB**: Lightweight analytical database
+   - File server: http://localhost:8080
+   - Database location: data/itmx_kaggle.duckdb
+   - Stores all pipeline data
 
 ## Monitoring
 
