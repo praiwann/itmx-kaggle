@@ -112,9 +112,9 @@ pipeline:
 		docker-compose exec prefect python prefect_utils.py run $(FLOW); \
 	fi
 
-# Run dbt in Docker
+# Run dbt in Docker (use THREADS=1 for compatibility, THREADS=4 for speed if supported)
 dbt:
-	docker-compose exec prefect dbt build --project-dir dbt --profiles-dir dbt --target docker
+	docker-compose exec prefect dbt build --project-dir dbt --profiles-dir dbt --target docker --threads $(or $(THREADS),1)
 
 help:
 	@echo "ITMX Kaggle Pipeline - Available Commands"
