@@ -9,7 +9,7 @@ ifneq (,$(wildcard ./.env))
     endif
 endif
 
-.PHONY: install run-local run-docker clean test env-check
+.PHONY: install run-local run-docker clean test env-check init pipeline dbt dbt-run dbt-test dbt-docs docker-build docker-up docker-down docker-logs docker-status prefect-deploy prefect-list prefect-ui show-env help
 
 # Check if .env exists, create from example if not
 env-check:
@@ -103,11 +103,11 @@ init: env-check install
 	@poetry run python scripts/setup_python_path.py
 	@echo "Project initialized. Please place MulDiGraph.pkl in $(DATA_RAW_PATH)/kaggle/"
 
-# Run pipeline in Docker (usage: make pipeline or make pipeline FLOW=kaggle_etl_pipeline)
+# Run pipeline in Docker (usage: make pipeline or make pipeline FLOW=kaggle_data_prep)
 pipeline:
 	@echo "Running pipeline in Docker..."
 	@if [ -z "$(FLOW)" ]; then \
-		docker-compose exec prefect python prefect_utils.py run kaggle_etl_pipeline; \
+		docker-compose exec prefect python prefect_utils.py run kaggle_data_prep; \
 	else \
 		docker-compose exec prefect python prefect_utils.py run $(FLOW); \
 	fi

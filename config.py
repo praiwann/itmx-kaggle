@@ -9,27 +9,49 @@ from dotenv import load_dotenv
 # Load .env file
 load_dotenv()
 
-# Get the project root directory (where this config.py file is located)
-PROJECT_ROOT = Path(__file__).parent.absolute()
+# Detect if running in Docker (by checking if /app directory exists and we're in it)
+RUNNING_IN_DOCKER = Path("/app").exists() and str(Path.cwd()).startswith("/app")
+
+# Get the project root directory
+if RUNNING_IN_DOCKER:
+    # In Docker, data is mounted at /data
+    PROJECT_ROOT = Path("/app").absolute()
+    DATA_BASE_PATH = Path("/data")
+else:
+    # Local development
+    PROJECT_ROOT = Path(__file__).parent.absolute()
+    DATA_BASE_PATH = PROJECT_ROOT
 
 # Database Configuration - make paths absolute
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "data/itmx_kaggle.duckdb")
 if not os.path.isabs(DUCKDB_PATH):
-    DUCKDB_PATH = str(PROJECT_ROOT / DUCKDB_PATH)
+    if RUNNING_IN_DOCKER:
+        DUCKDB_PATH = str(DATA_BASE_PATH / "itmx_kaggle.duckdb")
+    else:
+        DUCKDB_PATH = str(PROJECT_ROOT / DUCKDB_PATH)
 DUCKDB_DATABASE = os.getenv("DUCKDB_DATABASE", "itmx_kaggle")
 
 # Data Paths - make paths absolute
 DATA_RAW_PATH = os.getenv("DATA_RAW_PATH", "data/raw")
 if not os.path.isabs(DATA_RAW_PATH):
-    DATA_RAW_PATH = str(PROJECT_ROOT / DATA_RAW_PATH)
+    if RUNNING_IN_DOCKER:
+        DATA_RAW_PATH = str(DATA_BASE_PATH / "raw")
+    else:
+        DATA_RAW_PATH = str(PROJECT_ROOT / DATA_RAW_PATH)
 
 DATA_PROCESSED_PATH = os.getenv("DATA_PROCESSED_PATH", "data/processed")
 if not os.path.isabs(DATA_PROCESSED_PATH):
-    DATA_PROCESSED_PATH = str(PROJECT_ROOT / DATA_PROCESSED_PATH)
+    if RUNNING_IN_DOCKER:
+        DATA_PROCESSED_PATH = str(DATA_BASE_PATH / "processed")
+    else:
+        DATA_PROCESSED_PATH = str(PROJECT_ROOT / DATA_PROCESSED_PATH)
 
 KAGGLE_DATA_PATH = os.getenv("KAGGLE_DATA_PATH", f"{DATA_RAW_PATH}/kaggle")
 if not os.path.isabs(KAGGLE_DATA_PATH):
-    KAGGLE_DATA_PATH = str(PROJECT_ROOT / "data" / "raw" / "kaggle")
+    if RUNNING_IN_DOCKER:
+        KAGGLE_DATA_PATH = str(DATA_BASE_PATH / "raw" / "kaggle")
+    else:
+        KAGGLE_DATA_PATH = str(PROJECT_ROOT / "data" / "raw" / "kaggle")
 
 # Prefect Configuration
 PREFECT_API_URL = os.getenv("PREFECT_API_URL", "http://localhost:4200/api")

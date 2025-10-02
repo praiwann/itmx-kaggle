@@ -49,6 +49,7 @@ services:
     volumes:
       - ./flows:/app/flows
       - ./config.py:/app/config.py
+      - ./prefect_utils.py:/app/prefect_utils.py
       - ./dbt:/app/dbt
       - ${DOCKER_DATA_VOLUME:-./data:/data}
       - ./.env:/app/.env
