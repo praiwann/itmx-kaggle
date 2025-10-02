@@ -127,19 +127,27 @@ make prefect-deploy
 
 #### Step 3: Run the Pipeline
 
-**Option A: Run ETL Pipeline**
+**Complete Data Pipeline (ETL + Transformations)**
 ```bash
-# Run default pipeline
-make pipeline
+# Step 1: Run ETL to load data into staging
+make pipeline  # Loads data from MulDiGraph.pkl to DuckDB staging tables
 
-# Or run specific flow
-make pipeline FLOW=kaggle_etl_pipeline
+# Step 2: Run dbt transformations (Bronze → Silver → Gold)
+make dbt  # Default: single thread for compatibility
+
+# Or run dbt with multiple threads (if your Docker supports file locking)
+make dbt THREADS=4  # Faster on Linux or macOS with VirtioFS
 ```
 
-**Option B: Run dbt Transformations**
+**Note on Threading:**
+- Use `THREADS=1` (default) for compatibility with all Docker environments
+- Use `THREADS=4` on Linux or macOS with VirtioFS for better performance
+- macOS users: Enable VirtioFS in Docker Desktop → Settings → General → File sharing implementation
+
+**Run Individual Components**
 ```bash
-# Run all dbt models and tests
-make dbt
+# Run specific flow
+make pipeline FLOW=kaggle_etl_pipeline
 
 # Run only dbt models (without tests)
 make dbt-run
@@ -207,9 +215,10 @@ make docker-status      # Check service status
 make docker-logs        # View container logs
 
 # Pipeline Execution (in Docker)
-make pipeline           # Run default ETL pipeline
+make pipeline           # Run ETL pipeline (loads data to staging)
+make dbt                # Run dbt transformations (Bronze→Silver→Gold)
+make dbt THREADS=4      # Run dbt with multiple threads (if supported)
 make pipeline FLOW=x    # Run specific flow
-make dbt                # Run dbt transformations
 
 # Additional Operations
 make prefect-deploy     # Deploy flows to Prefect
@@ -232,13 +241,20 @@ make help               # Show all available commands
 make init               # Initialize project
 make docker-build       # Build images
 
-# Daily workflow
+# Running the full pipeline
 make docker-up          # Start services
-make prefect-deploy     # Deploy flows (if needed)
-make pipeline           # Run ETL pipeline
-make dbt                # Run transformations
+make prefect-deploy     # Deploy flows (first time only)
+make pipeline           # Step 1: ETL - Load data into staging
+make dbt                # Step 2: Transform - Bronze → Silver → Gold
 make docker-down        # Stop services when done
+
+# For faster dbt execution (if supported)
+make dbt THREADS=4      # Linux or macOS with VirtioFS
 ```
+
+**Important**: The complete data pipeline requires both:
+1. `make pipeline` - Loads raw data from MulDiGraph.pkl into staging tables
+2. `make dbt` - Transforms data through Bronze, Silver, and Gold layers
 
 ## Configuration
 
