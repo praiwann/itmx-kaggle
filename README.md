@@ -347,10 +347,30 @@ The dbt profile dynamically uses environment variables:
 
 ## Testing
 
-Run tests with:
+The project has pytest configured but no tests implemented yet. Data validation is handled by dbt tests.
+
+### To Add Python Tests:
 ```bash
-make test
+# Create test structure
+mkdir -p tests
+touch tests/__init__.py
+
+# Example test (tests/test_config.py)
+def test_environment_setup():
+    from config import DUCKDB_PATH
+    assert DUCKDB_PATH is not None
+
+# Run tests
+make test  # Currently runs: poetry run pytest tests/ -v
 ```
+
+### Suggested Test Areas:
+- NetworkX graph parsing logic
+- Prefect flow deployment configurations
+- Config module and environment variables
+- Utility functions in prefect_utils.py
+
+**Note**: For data quality tests, use `make dbt-test` instead.
 
 ## Docker Services
 
