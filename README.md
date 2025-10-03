@@ -133,16 +133,18 @@ make prefect-deploy
 make pipeline  # Loads data from MulDiGraph.pkl to DuckDB staging tables
 
 # Step 2: Run dbt transformations (Bronze → Silver → Gold)
-make dbt  # Default: single thread for compatibility
+make dbt  # Uses DBT_THREADS env var (default: 4 threads)
 
-# Or run dbt with multiple threads (if your Docker supports file locking)
-make dbt THREADS=4  # Faster on Linux or macOS with VirtioFS
+# Or override thread count for this run
+make dbt THREADS=8  # Force specific thread count
 ```
 
 **Note on Threading:**
-- Use `THREADS=1` (default) for compatibility with all Docker environments
-- Use `THREADS=4` on Linux or macOS with VirtioFS for better performance
-- macOS users: Enable VirtioFS in Docker Desktop → Settings → General → File sharing implementation
+- The project now uses Docker named volumes for DuckDB to enable multi-threading
+- DBT_THREADS env var sets default (4 threads) - configured in .env
+- Use THREADS parameter to override for a specific run
+- All platforms (Mac, Windows, Linux) now support multi-threading thanks to named volumes
+- No special Docker Desktop configuration required
 
 **Run Individual Components**
 ```bash
@@ -413,9 +415,25 @@ The project runs three containerized services:
    - Used for heavy data processing and DuckDB integration
 
 3. **DuckDB**: Lightweight analytical database
-   - File server: http://localhost:8080
-   - Database location: data/itmx_kaggle.duckdb
+   - Database location: /data/duckdb/itmx_kaggle.duckdb (in Docker volume)
    - Stores all pipeline data
+   - Uses named Docker volume for better filesystem consistency
+
+## Docker Volume Architecture
+
+The project uses a hybrid volume strategy for optimal performance:
+
+**Named Volumes** (for consistency and performance):
+- `itmx-duckdb-data`: DuckDB database files - enables multi-threading
+- `itmx-spark-work`: Spark working directory
+- `itmx-dbt-artifacts`: DBT build artifacts
+
+**Bind Mounts** (for easy host access):
+- `./data/raw`: Input data (add Kaggle dataset here)
+- `./data/processed`: Output data for analysis
+- `./flows`, `./dbt`: Application code for development
+
+This architecture resolves DuckDB file locking issues on Docker Desktop while maintaining easy data access.
 
 ## Spark Usage
 

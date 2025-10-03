@@ -33,11 +33,22 @@ run:
 docker-build:
 	docker-compose build
 
-docker-up: env-check
+docker-volumes:
+	@echo "Setting up Docker volumes..."
+	@./scripts/setup-volumes.sh
+
+docker-up: env-check docker-volumes
 	docker-compose up -d
 
 docker-down:
 	docker-compose down
+
+docker-clean-volumes:
+	@echo "⚠️  WARNING: This will delete all data in Docker volumes!"
+	@read -p "Are you sure? (y/N): " confirm && [ "$$confirm" = "y" ] || exit 1
+	docker-compose down
+	docker volume rm itmx-duckdb-data itmx-spark-work itmx-dbt-artifacts 2>/dev/null || true
+	@echo "Volumes cleaned. Run 'make docker-up' to recreate."
 
 docker-logs:
 	docker-compose logs -f
@@ -88,7 +99,7 @@ spark-local:
 
 clean:
 	rm -rf dbt/target dbt/dbt_packages dbt/logs
-	rm -f $(DUCKDB_PATH)*.wal $(DUCKDB_PATH)*.tmp
+	rm -f data/$(DUCKDB_FILENAME)*.wal data/$(DUCKDB_FILENAME)*.tmp
 	rm -rf $(DATA_PROCESSED_PATH)/*
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	rm -rf $(LOG_PATH)/*
@@ -102,7 +113,7 @@ test:
 show-env:
 	@echo "=== Current Environment Configuration ==="
 	@echo "ENVIRONMENT: $(ENVIRONMENT)"
-	@echo "DUCKDB_PATH: $(DUCKDB_PATH)"
+	@echo "DUCKDB_FILENAME: $(DUCKDB_FILENAME)"
 	@echo "DATA_RAW_PATH: $(DATA_RAW_PATH)"
 	@echo "DATA_PROCESSED_PATH: $(DATA_PROCESSED_PATH)"
 	@echo "PREFECT_API_URL: $(PREFECT_API_URL)"
@@ -129,9 +140,14 @@ pipeline:
 		docker-compose exec prefect python prefect_utils.py run $(FLOW); \
 	fi
 
-# Run dbt in Docker (use THREADS=1 for compatibility, THREADS=4 for speed if supported)
+# Run dbt in Docker
+# Uses DBT_THREADS env var (default 4) unless overridden with THREADS parameter
 dbt:
-	docker-compose exec prefect dbt build --project-dir dbt --profiles-dir dbt --target docker --threads $(or $(THREADS),1)
+	@if [ -z "$(THREADS)" ]; then \
+		docker-compose exec prefect dbt build --project-dir dbt --profiles-dir dbt --target docker; \
+	else \
+		docker-compose exec prefect dbt build --project-dir dbt --profiles-dir dbt --target docker --threads $(THREADS); \
+	fi
 
 help:
 	@echo "ITMX Kaggle Pipeline - Available Commands"

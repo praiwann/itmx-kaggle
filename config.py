@@ -22,14 +22,17 @@ else:
     PROJECT_ROOT = Path(__file__).parent.absolute()
     DATA_BASE_PATH = PROJECT_ROOT
 
-# Database Configuration - make paths absolute
-DUCKDB_PATH = os.getenv("DUCKDB_PATH", "data/itmx_kaggle.duckdb")
-if not os.path.isabs(DUCKDB_PATH):
-    if RUNNING_IN_DOCKER:
-        DUCKDB_PATH = str(DATA_BASE_PATH / "itmx_kaggle.duckdb")
-    else:
-        DUCKDB_PATH = str(PROJECT_ROOT / DUCKDB_PATH)
+# Database Configuration
+DUCKDB_FILENAME = os.getenv("DUCKDB_FILENAME", "itmx_kaggle.duckdb")
 DUCKDB_DATABASE = os.getenv("DUCKDB_DATABASE", "itmx_kaggle")
+
+# Build DUCKDB_PATH based on environment and filename
+if RUNNING_IN_DOCKER:
+    # In Docker, always use named volume path
+    DUCKDB_PATH = f"/data/duckdb/{DUCKDB_FILENAME}"
+else:
+    # Local development - use data directory
+    DUCKDB_PATH = str(PROJECT_ROOT / "data" / DUCKDB_FILENAME)
 
 # Data Paths - make paths absolute
 DATA_RAW_PATH = os.getenv("DATA_RAW_PATH", "data/raw")
@@ -73,7 +76,7 @@ DBT_THREADS = int(os.getenv("DBT_THREADS", "4"))
 
 # Docker Configuration
 DOCKER_NETWORK = os.getenv("DOCKER_NETWORK", "pipeline-network")
-DOCKER_DATA_VOLUME = os.getenv("DOCKER_DATA_VOLUME", "./data:/data")
+# DOCKER_DATA_VOLUME is deprecated - using named volumes now
 
 # Logging Configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

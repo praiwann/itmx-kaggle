@@ -1,20 +1,19 @@
 version: '3.8'
 
-services:
-  # Simple DuckDB file server
-  duckdb:
-    image: python:3.11-slim
-    command: python -m http.server 8080
-    working_dir: /data
-    volumes:
-      - ${DOCKER_DATA_VOLUME:-./data:/data}
-    ports:
-      - "8080:8080"
-    networks:
-      - ${DOCKER_NETWORK:-pipeline-network}
-    environment:
-      - DUCKDB_PATH=${DUCKDB_PATH:-data/itmx_kaggle.duckdb}
+# Named volumes for DuckDB to avoid filesystem locking issues
+# Raw data remains as bind mount for easy data addition from host
+volumes:
+  duckdb-data:
+    external: true
+    name: itmx-duckdb-data
+  spark-work:
+    external: true
+    name: itmx-spark-work
+  dbt-artifacts:
+    external: true
+    name: itmx-dbt-artifacts
 
+services:
   # Spark Master
   spark:
     build:
@@ -28,10 +27,10 @@ services:
       - SPARK_MASTER_PORT=7077
       - SPARK_NO_DAEMONIZE=true
       - SPARK_MASTER=${SPARK_MASTER}  # From .env
-      - DUCKDB_PATH=/${DUCKDB_PATH}  # Prepend / for Docker path
-      - KAGGLE_DATA_PATH=/${KAGGLE_DATA_PATH}
-      - DATA_RAW_PATH=/${DATA_RAW_PATH}
-      - DATA_PROCESSED_PATH=/${DATA_PROCESSED_PATH}
+      - DUCKDB_FILENAME=${DUCKDB_FILENAME:-itmx_kaggle.duckdb}
+      - KAGGLE_DATA_PATH=/data/raw/kaggle
+      - DATA_RAW_PATH=/data/raw
+      - DATA_PROCESSED_PATH=/data/processed
       - SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY}
       - SPARK_EXECUTOR_CORES=${SPARK_EXECUTOR_CORES}
       - PYSPARK_PYTHON=python3
@@ -41,7 +40,10 @@ services:
       - "7077:7077"  # Spark master port
     volumes:
       - ./spark:/opt/spark/work-dir/spark
-      - ${DOCKER_DATA_VOLUME:-./data:/data}
+      - spark-work:/opt/spark/work
+      - duckdb-data:/data/duckdb
+      - ./data/raw:/data/raw:ro
+      - ./data/processed:/data/processed
     networks:
       - ${DOCKER_NETWORK:-pipeline-network}
 
@@ -57,17 +59,20 @@ services:
       - SPARK_WORKER_CORES=${SPARK_WORKER_CORES:-2}
       - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY:-2g}
       - SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY}
-      - DUCKDB_PATH=/${DUCKDB_PATH}
-      - KAGGLE_DATA_PATH=/${KAGGLE_DATA_PATH}
-      - DATA_RAW_PATH=/${DATA_RAW_PATH}
-      - DATA_PROCESSED_PATH=/${DATA_PROCESSED_PATH}
+      - DUCKDB_FILENAME=${DUCKDB_FILENAME:-itmx_kaggle.duckdb}
+      - KAGGLE_DATA_PATH=/data/raw/kaggle
+      - DATA_RAW_PATH=/data/raw
+      - DATA_PROCESSED_PATH=/data/processed
       - PYSPARK_PYTHON=python3
       - PYSPARK_DRIVER_PYTHON=python3
     ports:
       - "8082:8080"  # Worker UI
     volumes:
       - ./spark:/opt/spark/work-dir/spark
-      - ${DOCKER_DATA_VOLUME:-./data:/data}
+      - spark-work:/opt/spark/work
+      - duckdb-data:/data/duckdb
+      - ./data/raw:/data/raw:ro
+      - ./data/processed:/data/processed
     networks:
       - ${DOCKER_NETWORK:-pipeline-network}
 
@@ -81,20 +86,27 @@ services:
     ports:
       - "${PREFECT_SERVER_PORT:-4200}:4200"
     volumes:
+      # Application code - bind mounts for development
       - ./flows:/app/flows
       - ./config.py:/app/config.py
       - ./prefect_utils.py:/app/prefect_utils.py
       - ./dbt:/app/dbt
-      - ${DOCKER_DATA_VOLUME:-./data:/data}
       - ./.env:/app/.env
+      # Data volumes - named volume for DuckDB, bind mounts for data
+      - duckdb-data:/data/duckdb
+      - ./data/raw:/data/raw
+      - ./data/processed:/data/processed
+      - dbt-artifacts:/app/dbt/target
     environment:
       - PREFECT_API_URL=${PREFECT_API_URL:-http://localhost:4200/api}
       - PREFECT_SERVER_API_HOST=${PREFECT_SERVER_HOST:-0.0.0.0}
-      - DUCKDB_PATH=${DUCKDB_PATH:-data/itmx_kaggle.duckdb}
-      - KAGGLE_DATA_PATH=${KAGGLE_DATA_PATH:-data/raw/kaggle}
-      - DATA_RAW_PATH=${DATA_RAW_PATH:-data/raw}
-      - DATA_PROCESSED_PATH=${DATA_PROCESSED_PATH:-data/processed}
+      - DUCKDB_FILENAME=${DUCKDB_FILENAME:-itmx_kaggle.duckdb}
+      - KAGGLE_DATA_PATH=/data/raw/kaggle
+      - DATA_RAW_PATH=/data/raw
+      - DATA_PROCESSED_PATH=/data/processed
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # DBT specific - enable multi-threading
+      - DBT_THREADS=${DBT_THREADS:-4}
     networks:
       - ${DOCKER_NETWORK:-pipeline-network}
 
