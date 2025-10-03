@@ -27,7 +27,9 @@ def get_spark_session(app_name="DuckDB_Integration"):
         print(f"Connecting to Spark cluster at {spark_master}")
         builder = builder.master(spark_master) \
             .config("spark.executor.memory", "1g") \
-            .config("spark.executor.cores", "2")
+            .config("spark.executor.cores", "2") \
+            .config("spark.pyspark.python", "python3") \
+            .config("spark.pyspark.driver.python", "python3")
     else:
         # Local mode
         print("Running in local mode")

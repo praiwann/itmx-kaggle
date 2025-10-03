@@ -117,7 +117,7 @@ make docker-up
 ```
 This starts:
 - **Prefect server** (orchestration) - UI at http://localhost:4200
-- **Spark cluster** (processing) - UI at http://localhost:8081
+- **Spark cluster** (master + worker for distributed processing) - UI at http://localhost:8081
 - **DuckDB server** (database)
 
 #### Step 2: Deploy Flows (first time only)
@@ -191,7 +191,8 @@ itmx-kaggle/
 │   │   └── kaggle/       # Kaggle dataset
 │   └── processed/        # Output data
 ├── .docker/              # Docker configurations
-├── spark/                # PySpark scripts
+├── spark/                # PySpark scripts and utilities
+├── scripts/              # Utility scripts (spark-submit, etc.)
 ├── prefect_utils.py      # Prefect management utilities
 ├── docker-compose.yml    # Container orchestration
 ├── Makefile             # Command shortcuts
@@ -227,6 +228,11 @@ make prefect-ui         # Open Prefect UI
 make dbt-run            # Run dbt models only
 make dbt-test           # Run dbt tests only
 make dbt-docs           # Generate and serve dbt docs
+
+# Spark Operations
+make spark-submit FILE=script.py        # Submit job to Docker Spark cluster
+make spark-submit FILE=script.py FLAGS=--quiet  # Submit with reduced logging
+make spark-local FILE=spark/script.py   # Run Spark job locally
 
 # Utilities
 make clean              # Clean generated files
@@ -291,10 +297,12 @@ PREFECT_SERVER_PORT=4200                  # Server port
 
 **Spark Configuration**
 ```bash
-SPARK_MASTER=spark://localhost:7077      # Spark cluster URL
+SPARK_MASTER=spark://spark-master:7077  # Spark cluster URL (Docker)
 SPARK_LOCAL=false                        # Set to true for local mode
 SPARK_EXECUTOR_MEMORY=2g                 # Executor memory allocation
 SPARK_EXECUTOR_CORES=2                   # CPU cores per executor
+SPARK_WORKER_CORES=2                     # Worker CPU cores (cluster mode)
+SPARK_WORKER_MEMORY=2g                   # Worker memory (cluster mode)
 ```
 
 **DBT Configuration**
@@ -397,20 +405,32 @@ The project runs three containerized services:
    - Includes dbt and all Python dependencies
    - Manages flow deployments and execution
 
-2. **Spark**: Distributed processing for large-scale data
-   - UI: http://localhost:8081
-   - Master: spark://localhost:7077
-   - Used for heavy data processing tasks
+2. **Spark Cluster**: Distributed processing for large-scale data
+   - Master UI: http://localhost:8081
+   - Master URL: spark://spark-master:7077
+   - Includes 1 master and 1 worker node
+   - Worker resources: 2 CPU cores, 2GB memory (configurable via .env)
+   - Used for heavy data processing and DuckDB integration
 
 3. **DuckDB**: Lightweight analytical database
    - File server: http://localhost:8080
    - Database location: data/itmx_kaggle.duckdb
    - Stores all pipeline data
 
+## Spark Usage
+
+The project includes Spark integration for distributed data processing:
+
+- **Submit jobs to Docker cluster**: `make spark-submit FILE=duckdb_spark_query.py`
+- **Run with quiet mode**: `make spark-submit FILE=duckdb_spark_query.py FLAGS=--quiet`
+- **Run locally**: `make spark-local FILE=spark/duckdb_spark_query.py`
+
+See `spark/duckdb_spark_query.py` for an example of DuckDB-Spark integration.
+
 ## Monitoring
 
 - **Prefect UI**: http://localhost:4200 - Monitor flow runs and deployments
-- **Spark UI**: http://localhost:8081 - Track Spark job execution
+- **Spark UI**: http://localhost:8081 - Track Spark job execution and worker status
 
 ## License
 

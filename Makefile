@@ -9,7 +9,7 @@ ifneq (,$(wildcard ./.env))
     endif
 endif
 
-.PHONY: install run-local run-docker clean test env-check init pipeline dbt dbt-run dbt-test dbt-docs docker-build docker-up docker-down docker-logs docker-status prefect-deploy prefect-list prefect-ui show-env help
+.PHONY: install run-local run-docker clean test env-check init pipeline dbt dbt-run dbt-test dbt-docs docker-build docker-up docker-down docker-logs docker-status prefect-deploy prefect-list prefect-ui spark-submit spark-local show-env help
 
 # Check if .env exists, create from example if not
 env-check:
@@ -68,6 +68,23 @@ dbt-test:
 dbt-docs:
 	docker-compose exec prefect dbt docs generate --project-dir dbt --profiles-dir dbt --target docker
 	docker-compose exec prefect dbt docs serve --project-dir dbt --profiles-dir dbt
+
+# Spark operations
+spark-submit:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make spark-submit FILE=<script.py>"; \
+		echo "Example: make spark-submit FILE=duckdb_spark_query.py"; \
+		exit 1; \
+	fi
+	@./scripts/spark-submit.sh $(FILE) $(FLAGS)
+
+spark-local:
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make spark-local FILE=<script.py>"; \
+		echo "Example: make spark-local FILE=spark/duckdb_spark_query.py"; \
+		exit 1; \
+	fi
+	@SPARK_LOCAL=true poetry run python $(FILE)
 
 clean:
 	rm -rf dbt/target dbt/dbt_packages dbt/logs
@@ -147,6 +164,11 @@ help:
 	@echo "   make dbt-run       - Run dbt models only"
 	@echo "   make dbt-test      - Run dbt tests only"
 	@echo "   make dbt-docs      - Generate and serve dbt docs"
+	@echo ""
+	@echo "  Spark:"
+	@echo "   make spark-submit FILE=<script>  - Submit Spark job to Docker cluster"
+	@echo "   make spark-submit FILE=<script> FLAGS=--quiet - Submit with quiet mode"
+	@echo "   make spark-local FILE=<path>     - Run Spark job locally"
 	@echo ""
 	@echo "  Utilities:"
 	@echo "   make clean         - Clean generated files"

@@ -1,4 +1,4 @@
-FROM apache/spark:3.5.0-python3
+FROM apache/spark:3.5.7-python3
 
 USER root
 
@@ -25,6 +25,16 @@ RUN chmod -R 755 ./spark/
 
 # Set Python path
 ENV PYTHONPATH=/opt/spark/work-dir:$PYTHONPATH
+
+# Create a helper script for running Spark jobs
+RUN echo '#!/bin/bash\n\
+exec /opt/spark/bin/spark-submit \
+--master spark://spark-master:7077 \
+--deploy-mode client \
+--executor-memory ${SPARK_EXECUTOR_MEMORY:-1g} \
+--executor-cores ${SPARK_EXECUTOR_CORES:-2} \
+"$@"' > /usr/local/bin/spark-run && \
+chmod +x /usr/local/bin/spark-run
 
 USER 185
 

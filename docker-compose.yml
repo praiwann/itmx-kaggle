@@ -15,22 +15,56 @@ services:
     environment:
       - DUCKDB_PATH=${DUCKDB_PATH:-data/itmx_kaggle.duckdb}
 
-  # Spark with custom build (includes dependencies)
+  # Spark Master
   spark:
     build:
       context: .
       dockerfile: .docker/Dockerfile.spark
     image: itmx-kaggle/spark:latest
+    container_name: spark-master
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     environment:
       - SPARK_MASTER_HOST=0.0.0.0
       - SPARK_MASTER_PORT=7077
       - SPARK_NO_DAEMONIZE=true
-      - SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY:-2g}
-      - SPARK_EXECUTOR_CORES=${SPARK_EXECUTOR_CORES:-2}
+      - SPARK_MASTER=${SPARK_MASTER}  # From .env
+      - DUCKDB_PATH=/${DUCKDB_PATH}  # Prepend / for Docker path
+      - KAGGLE_DATA_PATH=/${KAGGLE_DATA_PATH}
+      - DATA_RAW_PATH=/${DATA_RAW_PATH}
+      - DATA_PROCESSED_PATH=/${DATA_PROCESSED_PATH}
+      - SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY}
+      - SPARK_EXECUTOR_CORES=${SPARK_EXECUTOR_CORES}
+      - PYSPARK_PYTHON=python3
+      - PYSPARK_DRIVER_PYTHON=python3
     ports:
-      - "8081:8080"  # Spark UI
+      - "8081:8080"  # Spark Master UI
       - "7077:7077"  # Spark master port
+    volumes:
+      - ./spark:/opt/spark/work-dir/spark
+      - ${DOCKER_DATA_VOLUME:-./data:/data}
+    networks:
+      - ${DOCKER_NETWORK:-pipeline-network}
+
+  # Spark Worker
+  spark-worker:
+    image: itmx-kaggle/spark:latest
+    container_name: spark-worker-1
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+      - SPARK_WORKER_CORES=${SPARK_WORKER_CORES:-2}
+      - SPARK_WORKER_MEMORY=${SPARK_WORKER_MEMORY:-2g}
+      - SPARK_EXECUTOR_MEMORY=${SPARK_EXECUTOR_MEMORY}
+      - DUCKDB_PATH=/${DUCKDB_PATH}
+      - KAGGLE_DATA_PATH=/${KAGGLE_DATA_PATH}
+      - DATA_RAW_PATH=/${DATA_RAW_PATH}
+      - DATA_PROCESSED_PATH=/${DATA_PROCESSED_PATH}
+      - PYSPARK_PYTHON=python3
+      - PYSPARK_DRIVER_PYTHON=python3
+    ports:
+      - "8082:8080"  # Worker UI
     volumes:
       - ./spark:/opt/spark/work-dir/spark
       - ${DOCKER_DATA_VOLUME:-./data:/data}
